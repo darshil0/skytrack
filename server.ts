@@ -4,6 +4,7 @@ import path from "path";
 import cors from "cors";
 import { configDotenv } from "./server/dotenv.ts";
 import { z } from "zod";
+import { serverSearchFlights, serverGetFlightTelemetry, serverGetLiveWeatherOverlay } from "./server/aiService.ts";
 
 configDotenv();
 
@@ -69,6 +70,47 @@ async function startServer() {
   // API Routes
   app.get("/api/flights", (req, res) => {
     res.json(flights);
+  });
+
+  // Gemini Flight Search Proxy
+  app.post("/api/gemini/search", async (req, res) => {
+    try {
+      const { query } = req.body;
+      if (!query || typeof query !== "string") {
+        return res.status(400).json({ error: "Query must be a string." });
+      }
+      const results = await serverSearchFlights(query);
+      res.json(results);
+    } catch (error) {
+      console.error("Server search flights failed:", error);
+      res.status(500).json({ error: "Search failed" });
+    }
+  });
+
+  // Gemini Flight Telemetry Proxy
+  app.post("/api/gemini/telemetry", async (req, res) => {
+    try {
+      const { flight } = req.body;
+      if (!flight) {
+        return res.status(400).json({ error: "Flight parameter is required." });
+      }
+      const telemetry = await serverGetFlightTelemetry(flight);
+      res.json(telemetry || {});
+    } catch (error) {
+      console.error("Server flight telemetry failed:", error);
+      res.status(500).json({ error: "Telemetry failed" });
+    }
+  });
+
+  // Weather Overlay Proxy
+  app.get("/api/weather/overlay", async (req, res) => {
+    try {
+      const weatherOverlay = await serverGetLiveWeatherOverlay();
+      res.json(weatherOverlay);
+    } catch (error) {
+      console.error("Server weather overlay failed:", error);
+      res.status(500).json({ error: "Weather overlay failed" });
+    }
   });
 
   app.post("/api/flights", (req, res) => {
