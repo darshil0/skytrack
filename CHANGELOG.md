@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 2026-06-12
+
+### Added
+- **Telemetry Graph Enhancements**:
+  - Added visual "Current Position" indicators directly onto the historical coordinate tracking graph using a color-synchronized `ReferenceDot` system (blue for Latitude, emerald for Longitude) for precise spatial relativity.
+- **Secure Server-Side AI Architecture**:
+  - Transitioned 100% of the Google Gen AI client operations to secure, server-side Express routes (`/api/gemini/*` and `/api/weather/*`).
+  - Added centralized lazy-initialization logic to prevent startup failures in non-API-key environments.
+  - Configured robust error boundary schemas for both flight searches and meteorological radar predictions.
+- **Advanced Server Bundling**:
+  - Integrated high-performance `esbuild` server compilation to bundle `server.ts` into a self-contained, CommonJS-format `dist/server.cjs` file to bypass strict Node runtime ES Module restrictions.
+
+### Fixed
+- **API Key Security**: Eliminated all front-end imports of the `@google/genai` package and direct environment key references, ensuring keys are restricted entirely to server memory.
+- **HMR and Tooling Sync**: Normalized linting configurations and verified standard TypeScript declarations across production bundle flows.
+
 ## [1.6.0] - 2026-04-29
 
 ### Added
