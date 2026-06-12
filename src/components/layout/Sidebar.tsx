@@ -9,7 +9,7 @@ import { motion } from 'motion/react';
 import { clsx as cn } from 'clsx';
 import { FlightSearch } from '../FlightSearch';
 import { FlightRow } from '../FlightRow';
-import { Flight, LiveRadarFlight } from '../../types';
+import { Flight } from '../../types';
 
 interface SidebarProps {
   isMobileListOpen: boolean;
@@ -20,14 +20,14 @@ interface SidebarProps {
   setShowModal: (show: boolean) => void;
   setEditingFlight: (flight: Flight | undefined) => void;
   flights: Flight[];
-  liveRadarFlights: LiveRadarFlight[];
+  liveRadarFlights: any[];
   isSearching: boolean;
   handleSearch: (query: string) => void;
   fetchFlights: () => void;
   fetchLiveRadar: () => void;
   selectedFlightId?: string;
   handleSelectFlight: (id: string) => void;
-  handleDeleteFlight: (id: string) => void;
+  handleDeleteFlight: (id: string, e: React.MouseEvent) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -200,7 +200,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <Edit2 className="w-3.5 h-3.5" />
                    </button>
                    <button 
-                      onClick={() => handleDeleteFlight(flight.id)}
+                      onClick={(e) => handleDeleteFlight(flight.id, e)}
                       className="p-1.5 rounded bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-red-900/20"
                    >
                       <Trash2 className="w-3.5 h-3.5" />

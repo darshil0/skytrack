@@ -20,7 +20,7 @@ const flightInputSchema = z.object({
 interface FlightModalProps {
   flight?: Flight;
   onClose: () => void;
-  onSave: (data: Partial<Flight>) => Promise<void>;
+  onSave: (data: any) => Promise<void>;
 }
 
 export const FlightModal: React.FC<FlightModalProps> = ({ flight, onClose, onSave }) => {
@@ -86,18 +86,18 @@ export const FlightModal: React.FC<FlightModalProps> = ({ flight, onClose, onSav
     setLoading(true); // Fix for Issue #12: Loading state
     try {
       // Map back to API structure
-      const payload: Partial<Flight> = {
+      const payload = {
         flightNumber: formData.flightNumber,
         airline: formData.airline,
         origin: { 
           code: formData.originCode, 
           city: formData.originCity,
-          lat: 40.7128, lng: -74.0060 // Default to NYC instead of 0,0
+          lat: 0, lng: 0 // Mock coords
         },
         destination: { 
           code: formData.destinationCode, 
           city: formData.destinationCity,
-          lat: 51.5074, lng: -0.1278 // Default to London instead of 0,0
+          lat: 0, lng: 0 // Mock coords
         },
         departureTime: new Date(formData.departureTime).toISOString(),
         arrivalTime: new Date(formData.arrivalTime).toISOString(),
@@ -115,7 +115,7 @@ export const FlightModal: React.FC<FlightModalProps> = ({ flight, onClose, onSav
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg glass-panel rounded-xl overflow-hidden tactical-glow">
+      <div className="w-full max-w-lg bg-[#0B0F19] border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
         <header className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
           <h3 className="text-white font-serif font-black italic uppercase tracking-widest text-sm">
             {flight ? 'Edit Flight Object' : 'Register New Flight'}
@@ -130,7 +130,6 @@ export const FlightModal: React.FC<FlightModalProps> = ({ flight, onClose, onSav
             <div className="space-y-1">
               <label className="text-[10px] font-mono text-gray-500 uppercase">Flight No.</label>
               <input 
-                autoFocus
                 value={formData.flightNumber}
                 onChange={e => setFormData({...formData, flightNumber: e.target.value})}
                 className="w-full bg-black/50 border border-gray-800 rounded px-3 py-2 text-sm text-white focus:border-blue-500 outline-none" 
@@ -207,7 +206,7 @@ export const FlightModal: React.FC<FlightModalProps> = ({ flight, onClose, onSav
               <label className="text-[10px] font-mono text-gray-500 uppercase">Status</label>
               <select 
                 value={formData.status}
-                onChange={e => setFormData({...formData, status: e.target.value as Flight['status']})}
+                onChange={e => setFormData({...formData, status: e.target.value as any})}
                 className="w-full bg-black/50 border border-gray-800 rounded px-3 py-2 text-sm text-white appearance-none"
               >
                 <option value="scheduled">SCHEDULED</option>

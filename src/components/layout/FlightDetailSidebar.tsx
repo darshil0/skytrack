@@ -7,15 +7,15 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Share2, X, Activity, Wind, Navigation, Info, Radio, History } from 'lucide-react';
 import { format } from 'date-fns';
-import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceDot } from 'recharts';
 import { clsx as cn } from 'clsx';
-import { Flight, UserPreferences, LiveRadarFlight } from '../../types';
+import { Flight, UserPreferences } from '../../types';
 
 interface FlightDetailSidebarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
   selectedFlight?: Flight;
-  selectedLiveFlight?: LiveRadarFlight;
+  selectedLiveFlight?: any;
   handleShareFlight: () => void;
   preferences: UserPreferences;
 }
@@ -348,6 +348,27 @@ export const FlightDetailSidebar: React.FC<FlightDetailSidebarProps> = ({
                                 stroke="#10B981" 
                                 fillOpacity={1} 
                                 fill="url(#colorLng)" 
+                                strokeWidth={1.5}
+                                isAnimationActive={true}
+                             />
+                             {/* Current Position Indicators */}
+                             <ReferenceDot 
+                                yAxisId="lat"
+                                x={selectedFlight.history[selectedFlight.history.length - 1].timestamp}
+                                y={selectedFlight.history[selectedFlight.history.length - 1].lat}
+                                r={3}
+                                fill="#3B82F6"
+                                stroke="#fff"
+                                strokeWidth={1.5}
+                                isAnimationActive={true}
+                             />
+                             <ReferenceDot 
+                                yAxisId="lng"
+                                x={selectedFlight.history[selectedFlight.history.length - 1].timestamp}
+                                y={selectedFlight.history[selectedFlight.history.length - 1].lng}
+                                r={3}
+                                fill="#10B981"
+                                stroke="#fff"
                                 strokeWidth={1.5}
                                 isAnimationActive={true}
                              />

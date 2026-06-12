@@ -75,15 +75,3 @@ export interface UserPreferences {
   defaultView: 'global' | 'local';
 }
 
-export interface LiveRadarFlight {
-  id: string;
-  callsign: string;
-  origin_country: string;
-  lat: number;
-  lng: number;
-  altitude: number;
-  velocity: number;
-  heading: number;
-  on_ground: boolean;
-}
-

@@ -28,10 +28,9 @@ const TraversedPath: React.FC<{
     animate(
       scope.current,
       { 
-        // @ts-ignore
         pathLength: progress, 
         opacity: isSelected ? 0.8 : 0.3 
-      } as any,
+      },
       { 
         duration: 2, 
         ease: "easeInOut" 
@@ -46,7 +45,7 @@ const TraversedPath: React.FC<{
       fill="none"
       stroke={isSelected ? '#3B82F6' : '#60A5FA'}
       strokeWidth={strokeWidth}
-      style={{ pathLength: 0, opacity: 0 } as any}
+      style={{ pathLength: 0, opacity: 0 }}
       className="pointer-events-none transition-all duration-500"
     />
   );
@@ -56,7 +55,7 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [worldData, setWorldData] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [worldData, setWorldData] = useState<any>(null);
   const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
   const [weatherData, setWeatherData] = useState<WeatherCell[]>([]);
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
@@ -64,17 +63,12 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
 
   // Load weather data when layer is enabled
   useEffect(() => {
-    if (preferences?.mapLayers?.weather) {
-      if (weatherData.length === 0 && !isWeatherLoading) {
-        setIsWeatherLoading(true);
-        getLiveWeatherOverlay().then(data => {
-          setWeatherData(data);
-          setIsWeatherLoading(false);
-        });
-      }
-    } else {
-      // Cleanup weather data to save memory when layer is disabled
-      if (weatherData.length > 0) setWeatherData([]);
+    if (preferences?.mapLayers?.weather && weatherData.length === 0 && !isWeatherLoading) {
+      setIsWeatherLoading(true);
+      getLiveWeatherOverlay().then(data => {
+        setWeatherData(data);
+        setIsWeatherLoading(false);
+      });
     }
   }, [preferences?.mapLayers?.weather]);
 
@@ -107,9 +101,8 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
 
   // Load static map data once
   useEffect(() => {
-    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((data) => {
-      const atlas = data as any;
-      setWorldData(topojson.feature(atlas, atlas.objects.countries) as unknown as GeoJSON.FeatureCollection);
+    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((data: any) => {
+      setWorldData(topojson.feature(data, data.objects.countries));
     });
   }, []);
 
@@ -147,20 +140,21 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
     const flight = flights.find(f => f.id === selectedFlightId);
     if (!flight?.currentPosition) return;
 
-    const [x, y] = projection([flight.currentPosition.lng, flight.currentPosition.lat])!;
+    const [x, y] = projection([flight.currentPosition.lng, flight.currentPosition.lat]);
     const k = transform.k < 4 ? 6 : transform.k; // Deeper zoom for focus
     
     const transition = d3.select(svgRef.current)
       .transition()
-      .duration(1000)
+      .duration(1000) // Slightly longer for smoother deceleration
       .ease(d3.easeCubicInOut);
 
     zoomBehavior.transform(transition as any, d3.zoomIdentity
       .translate(dimensions.width / 2, dimensions.height / 2)
       .scale(k)
       .translate(-x, -y));
-  }, [selectedFlightId, flights.find(f => f.id === selectedFlightId)?.currentPosition?.lat, flights.find(f => f.id === selectedFlightId)?.currentPosition?.lng]); 
+  }, [selectedFlightId]); // Only re-run when selection changes
 
+  const radarRotation = 0; // Handled by CSS or specific logic if needed, but keeping simple for now
 
   return (
     <div ref={containerRef} className="w-full h-full bg-[#030712] overflow-hidden relative border-b border-gray-800">
@@ -226,10 +220,10 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
             <line x1="0" y1="-15" x2="0" y2="15" stroke="#3B82F6" strokeWidth="0.5" opacity="0.1" />
           </g>
 
-          {/* Static Map Layer - Memoized for performance */}
-          {useMemo(() => worldData && (
+          {/* Static Map Layer */}
+          {worldData && (
             <g className="map-base">
-              {worldData.features.map((feature, i: number) => (
+              {worldData.features.map((feature: any, i: number) => (
                 <path
                   key={`country-${i}`}
                   d={pathGenerator(feature) || ''}
@@ -239,14 +233,14 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
                 />
               ))}
               <path
-                d={pathGenerator(d3.geoGraticule().step([10, 10])() as unknown as GeoJSON.GeometryObject) || ''}
+                d={pathGenerator(d3.geoGraticule().step([10, 10])() as any) || ''}
                 fill="none"
                 stroke="#3B82F6"
                 strokeWidth={0.2 / transform.k}
                 opacity={0.1}
               />
             </g>
-          ), [worldData, pathGenerator, transform.k])}
+          )}
 
           {/* Weather Radar Layer */}
           {preferences?.mapLayers?.weather && (
@@ -298,12 +292,13 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
           )}
 
           {/* Airspace Layer */}
-          {useMemo(() => preferences?.mapLayers?.airspace && (
+          {preferences?.mapLayers?.airspace && (
             <g className="airspace-layer">
                {airspaceData.map((sector) => {
                  const pos = projection([sector.center.lng, sector.center.lat]);
                  if (!pos) return null;
                  
+                 // Draw a tactical octagonal boundary
                  const radius = 60 / transform.k;
                  const points = [];
                  for (let i = 0; i < 8; i++) {
@@ -340,7 +335,7 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
                  );
                })}
             </g>
-          ), [preferences?.mapLayers?.airspace, airspaceData, projection, transform.k])}
+          )}
 
           {/* Dynamic Flights Layer */}
           <g className="flights">
@@ -482,7 +477,7 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="absolute bottom-6 right-6 glass-panel p-5 rounded-sm tactical-glow z-50 w-72 overflow-hidden"
+            className="absolute bottom-6 right-6 bg-black/80 backdrop-blur-2xl border border-blue-500/30 p-5 rounded-sm shadow-[0_0_50px_rgba(0,0,0,0.5)] z-50 w-72 pointer-events-none overflow-hidden"
           >
             {/* Decrypting lines animation */}
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/40 to-transparent animate-scan z-10" />
@@ -513,11 +508,11 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
                      <div className="space-y-3">
                         <div>
                           <span className="text-[8px] font-mono text-gray-500 uppercase block tracking-widest">Velocity</span>
-                          <span className="text-sm font-bold text-white tabular-nums">{selectedFlight?.currentPosition?.speed ?? 0} <span className="text-[9px] font-normal text-gray-400">KT</span></span>
+                          <span className="text-sm font-bold text-white tabular-nums">{selectedFlight?.speed ?? 0} <span className="text-[9px] font-normal text-gray-400">KT</span></span>
                         </div>
                         <div>
                           <span className="text-[8px] font-mono text-gray-500 uppercase block tracking-widest">Altitude</span>
-                          <span className="text-sm font-bold text-white tabular-nums">{(selectedFlight?.currentPosition?.altitude ?? 0).toLocaleString()} <span className="text-[9px] font-normal text-gray-400">FT</span></span>
+                          <span className="text-sm font-bold text-white tabular-nums">{(selectedFlight?.altitude ?? 0).toLocaleString()} <span className="text-[9px] font-normal text-gray-400">FT</span></span>
                         </div>
                      </div>
                      <div className="space-y-3">
@@ -573,17 +568,10 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
         )}
       </AnimatePresence>
 
-      {/* Radar Overlay Scan (Tactical Sweep) */}
+      {/* Radar Overlay Scan (Pure CSS animation for zero JS overhead) */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
          <div className="w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1)_0%,transparent_70%)]" />
-         <motion.div 
-           animate={{ rotate: 360 }}
-           transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-           className="absolute top-1/2 left-1/2 w-[200vw] h-[200vh] -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-500/10"
-           style={{ 
-             background: 'conic-gradient(from 0deg, transparent 0%, rgba(59,130,246,0.2) 10%, transparent 20%)'
-           }}
-         />
+         <div className="absolute top-1/2 left-1/2 w-[200vw] h-[200vh] -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-500/10" />
       </div>
 
       <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md p-3 border border-gray-800 rounded-sm text-[10px] font-mono text-blue-400/80 shadow-2xl">
