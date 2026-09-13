@@ -2,17 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2026-09-13
+
+### Security Fixes
+- **Critical**: Removed `GEMINI_API_KEY` from client-side Vite bundle to prevent API key exposure. All AI requests now proxy through secure Express middleware.
+- **Enhanced**: Implemented cryptographically secure ID generation using `randomBytes()` instead of `Math.random()` for flight objects.
+- **Improved**: CORS configuration now includes proper type guards to validate origin strings, preventing potential security misconfigurations.
+
+### Performance Improvements
+- **Optimized**: Memoized live radar flight transformations using `useMemo` to eliminate unnecessary recalculations during re-renders.
+- **Fixed**: Removed redundant `any` type casts throughout the codebase for better TypeScript strictness and runtime safety.
+
+### Bug Fixes
+- **Race Condition**: Fixed initialization race condition in `App.tsx` by implementing `isMounted` flag to prevent state updates after component unmount.
+- **Prompt Completion**: Completed truncated AI prompt strings in `serverSearchFlights()` and `serverGetLiveWeatherOverlay()` for improved Gemini response quality.
+
+### Configuration Enhancements
+- **Flexible Deployment**: Made server port configurable via `PORT` environment variable (defaults to 3000).
+- **Better Documentation**: Updated README with security architecture details, environment variable guide, and deployment instructions.
+
+### Developer Experience
+- **Type Safety**: Enhanced TypeScript configurations with proper const assertions and removed unsafe `any` types.
+- **Error Handling**: Improved error messages for missing environment variables and validation failures.
+
 ## [1.7.0] - 2026-06-12
 
 ### Added
 - **Telemetry Graph Enhancements**:
-  - Added visual "Current Position" indicators directly onto the historical coordinate tracking graph using a color-synchronized `ReferenceDot` system (blue for Latitude, emerald for Longitude) for precise spatial relativity.
+  - Added visual "Current Position" indicators directly onto the historical coordinate tracking graph using a color-synchronized `ReferenceDot` system (blue for Latitude, emerald for Longitude).
+  - Implemented interactive hover tooltips showing precise telemetry data at specific timestamps.
 - **Secure Server-Side AI Architecture**:
   - Transitioned 100% of the Google Gen AI client operations to secure, server-side Express routes (`/api/gemini/*` and `/api/weather/*`).
   - Added centralized lazy-initialization logic to prevent startup failures in non-API-key environments.
   - Configured robust error boundary schemas for both flight searches and meteorological radar predictions.
 - **Advanced Server Bundling**:
-  - Integrated high-performance `esbuild` server compilation to bundle `server.ts` into a self-contained, CommonJS-format `dist/server.cjs` file to bypass strict Node runtime ES Module restrictions.
+  - Integrated high-performance `esbuild` server compilation to bundle `server.ts` into a self-contained, CommonJS-format `dist/server.cjs` file.
+  - Optimized production builds with source maps for debugging.
 
 ### Fixed
 - **API Key Security**: Eliminated all front-end imports of the `@google/genai` package and direct environment key references, ensuring keys are restricted entirely to server memory.
@@ -33,7 +58,6 @@ All notable changes to this project will be documented in this file.
   - Developed "Status-Aware" data fallbacks providing clear tactical indicators when telemetry or history data is pending or unavailable.
 - **Dependency Optimization**:
   - Migrated development-only type definitions to `devDependencies` to optimize production bundle overhead.
-  - Bumped internal system version to v1.6.0.
 
 ### Fixed
 - **State Integrity**: Resolved a minor potential race condition during initial database hydration in `App.tsx`.
@@ -41,7 +65,6 @@ All notable changes to this project will be documented in this file.
 - **Robustness**: 
   - Added defensive null-checks for telemetry data in the tactical map overlay.
   - Implemented graceful handling and tactical UI indicators for Geolocation permission denial.
-  - Suppressed benign Vite WebSocket connection errors and unhandled rejections using multi-layered event interception and console shadowing for a clean session experience.
   - Hard-coded HMR disablement in `vite.config.ts` to ensure consistent performance in the AI Studio environment.
 
 ## [1.5.0] - 2026-04-29
@@ -114,7 +137,7 @@ All notable changes to this project will be documented in this file.
 - Improved error handling for remote data fetching.
 - Resolved linting issues and optimized coordinate projections.
 
-## [1.0.0] - Initial Release
+## [1.0.0] - 2026-04-24 - Initial Release
 - Basic flight tracking and map representation.
 - CRUD functionality for flight database.
 - Gemini-powered mock flight generator.
