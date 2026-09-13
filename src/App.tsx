@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Map } from './components/Map';
 import { FlightModal } from './components/FlightModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -153,7 +153,7 @@ export default function App() {
     if (alertsChanged) {
       setActiveAlerts(newAlerts);
     }
-  }, [flights, liveRadarFlights, userLocation, preferences.notifications.proximityAlerts, preferences.notifications.proximityRadius, playAlertSound, activeAlerts]); // activeAlerts stays here but logic above prevents loop
+  }, [flights, liveRadarFlights, userLocation, preferences.notifications.proximityAlerts, preferences.notifications.proximityRadius, playAlertSound, activeAlerts]);
 
   const handleSavePreferences = (newPrefs: UserPreferences) => {
     setPreferences(newPrefs);
@@ -221,12 +221,15 @@ export default function App() {
     }
   }, []);
 
+  // FIX #3: Initialize data only once on mount
   useEffect(() => {
-    getUserLocation();
-    
+    let isMounted = true;
+
     const initializeData = async () => {
       try {
         const res = await fetch('/api/flights');
+        if (!isMounted) return;
+        
         if (res.ok) {
           const data = await res.json();
           setFlights(data);
@@ -234,6 +237,8 @@ export default function App() {
           if (data.length === 0) {
             setIsSearching(true);
             const aiData = await getInitialFlights();
+            if (!isMounted) return;
+            
             for (const f of aiData) {
               await fetch('/api/flights', {
                 method: 'POST',
@@ -243,23 +248,29 @@ export default function App() {
             }
             // Final refresh
             const finalRes = await fetch('/api/flights');
-            if (finalRes.ok) {
+            if (finalRes.ok && isMounted) {
               const finalData = await finalRes.json();
               setFlights(finalData);
               if (finalData.length > 0 && !selectedFlightId) setSelectedFlightId(finalData[0].id);
             }
-            setIsSearching(false);
+            if (isMounted) setIsSearching(false);
           } else if (data.length > 0 && !selectedFlightId) {
             setSelectedFlightId(data[0].id);
           }
         }
       } catch (err) {
         console.error("Initialization failed", err);
+        if (isMounted) setIsSearching(false);
       }
     };
     
+    getUserLocation();
     initializeData();
-  }, [getUserLocation]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Run only once on mount
 
   useEffect(() => {
     // Handle deep linking for shared flights
@@ -363,6 +374,22 @@ export default function App() {
     setIsSidebarOpen(true);
   }, []);
 
+  // FIX #8: Memoize live radar flight transformations to prevent unnecessary recalculations
+  const transformedLiveRadarFlights = useMemo(() => 
+    liveRadarFlights.map(f => ({
+      id: f.id,
+      flightNumber: f.callsign,
+      airline: f.origin_country,
+      origin: { code: '---', city: 'LIVE', lat: f.lat, lng: f.lng },
+      destination: { code: '---', city: 'LIVE', lat: f.lat, lng: f.lng },
+      departureTime: new Date().toISOString(),
+      arrivalTime: new Date().toISOString(),
+      status: f.on_ground ? 'landed' as const : 'on-time' as const,
+      progress: 100,
+      currentPosition: { lat: f.lat, lng: f.lng, altitude: f.altitude, speed: f.velocity, heading: f.heading }
+    }))
+  , [liveRadarFlights]);
+
   return (
     <div className="flex h-screen w-full bg-[#0B0F19] font-sans selection:bg-blue-500/30 overflow-hidden">
       <Sidebar 
@@ -407,18 +434,7 @@ export default function App() {
            />
 
            <Map 
-            flights={liveRadarActive ? liveRadarFlights.map(f => ({
-              id: f.id,
-              flightNumber: f.callsign,
-              airline: f.origin_country,
-              origin: { code: '---', city: 'LIVE', lat: f.lat, lng: f.lng },
-              destination: { code: '---', city: 'LIVE', lat: f.lat, lng: f.lng },
-              departureTime: new Date().toISOString(),
-              arrivalTime: new Date().toISOString(),
-              status: f.on_ground ? 'landed' : 'on-time',
-              progress: 100,
-              currentPosition: { lat: f.lat, lng: f.lng, altitude: f.altitude, speed: f.velocity, heading: f.heading }
-            })) : flights} 
+            flights={liveRadarActive ? transformedLiveRadarFlights : flights} 
             selectedFlightId={selectedFlightId} 
             onSelectFlight={handleSelectFlight}
             userLocation={userLocation}
@@ -440,7 +456,7 @@ export default function App() {
            </AnimatePresence>
 
 
-                          
+                           
 
 
         </div>
@@ -497,7 +513,7 @@ export default function App() {
         {showModal && (
           <FlightModal 
             flight={editingFlight}
-            onClose={() => { setShowModal(false); setEditingFlight(undefined); }} // Fix Issue #10
+            onClose={() => { setShowModal(false); setEditingFlight(undefined); }}
             onSave={handleSaveFlight}
           />
         )}
@@ -513,4 +529,3 @@ export default function App() {
     </div>
   );
 }
-

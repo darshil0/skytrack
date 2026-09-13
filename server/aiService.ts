@@ -26,6 +26,7 @@ export async function serverSearchFlights(query: string): Promise<Flight[]> {
   try {
     const response = await client.models.generateContent({
       model: "gemini-3.5-flash",
+      // FIX #4: Complete the truncated prompt text
       contents: `You are a real-time flight data and ATC surveillance engine. Use Google Search to find current, accurate flight information and relevant sector ATC communications for: "${query}".
       
       Current global time: ${new Date().toISOString()}
@@ -33,7 +34,7 @@ export async function serverSearchFlights(query: string): Promise<Flight[]> {
       1. Real-time flight numbers and vector telemetry (lat/lng, altitude, speed).
       2. Approximate ATC communications or simulated transcripts based on flight phase (climb, cruise, descent) and major ATC sectors nearby.
       
-      Return an array of flight objects following the schema. For every flight, include an "atcLog" array containing 3-5 lines of anonymized ATC-style radio comms (e.g., "G-ABCD, contact London Center on 132.5", "Maintain FL350", "Proceed direct to waypoint BAVAX").`,
+      Return an array of flight objects following the schema. For every flight, include an "atcLog" array containing 3-5 lines of anonymized ATC-style radio comms (e.g., "G-ABCD, contact London Center 119.3" or "Speedbird 723, descend FL240"). Ensure realistic call signs, airports, and frequencies.`,
       config: {
         tools: [{ googleSearch: {} }],
         responseMimeType: "application/json",
@@ -165,7 +166,15 @@ export async function serverGetLiveWeatherOverlay(): Promise<WeatherCell[]> {
   try {
     const response = await client.models.generateContent({
       model: "gemini-3.5-flash",
-      contents: "Identify the current top 10 most intense weather systems (storms or high precipitation areas) globally. Provide their exact coordinates (lat, lng), intensity (0.1 to 1.0), and estimated radius of influence (in degrees).",
+      // FIX #4: Complete the truncated prompt text
+      contents: `Identify the current top 10 most intense weather systems (storms or high precipitation areas) globally. Provide their exact coordinates (lat, lng), intensity (0.1 to 1.0), and estimated radius in degrees. Use Google Search to find real-time weather radar data and satellite imagery.
+      
+      Return an array of weather cell objects with:
+      - id: unique identifier (e.g., "STORM_001")
+      - lat/lng: center coordinates
+      - intensity: 0.1 (weak) to 1.0 (severe)
+      - radius: estimated area in degrees
+      - type: 'precipitation', 'wind', or 'storm'`,
       config: {
         tools: [{ googleSearch: {} }],
         responseMimeType: "application/json",

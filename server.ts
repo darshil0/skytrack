@@ -4,9 +4,13 @@ import path from "path";
 import cors from "cors";
 import { configDotenv } from "./server/dotenv.ts";
 import { z } from "zod";
+import { randomBytes } from "crypto";
 import { serverSearchFlights, serverGetFlightTelemetry, serverGetLiveWeatherOverlay } from "./server/aiService.ts";
 
 configDotenv();
+
+// FIX #5: Make port configurable via environment variable
+const PORT = parseInt(process.env.PORT || "3000", 10);
 
 const flightStatusSchema = z.enum(["scheduled", "on-time", "delayed", "landed", "diverted"]);
 
@@ -39,6 +43,11 @@ const flightSchema = z.object({
   }).optional(),
 });
 
+// FIX #6: Utility function for secure ID generation
+function generateSecureId(): string {
+  return randomBytes(6).toString('hex');
+}
+
 // Mock Database
 let flights = [
   {
@@ -49,7 +58,7 @@ let flights = [
     destination: { code: "JFK", city: "New York", lat: 40.6413, lng: -73.7781 },
     departureTime: new Date(Date.now() - 3600000).toISOString(),
     arrivalTime: new Date(Date.now() + 21600000).toISOString(),
-    status: "on-time",
+    status: "on-time" as const,
     progress: 15,
     currentPosition: { lat: 52.0, lng: -10.0, altitude: 35000, speed: 450, heading: 270 }
   }
@@ -57,13 +66,18 @@ let flights = [
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
 
   app.use(express.json());
   
-  // Fix for Issue #9: CORS configuration
+  // FIX #7: Improved CORS configuration with proper validation
+  const allowedOrigins = [
+    "http://0.0.0.0:3000",
+    "http://localhost:3000",
+    process.env.APP_URL
+  ].filter((origin): origin is string => Boolean(origin) && typeof origin === 'string');
+
   app.use(cors({
-    origin: ["http://0.0.0.0:3000", "http://localhost:3000", process.env.APP_URL].filter(Boolean) as string[],
+    origin: allowedOrigins,
     credentials: true
   }));
 
@@ -115,8 +129,9 @@ async function startServer() {
 
   app.post("/api/flights", (req, res) => {
     try {
-      const data = flightSchema.parse({ ...req.body, id: Math.random().toString(36).substr(2, 9) });
-      (flights as any).push(data);
+      // FIX #6: Use secure ID generation instead of Math.random()
+      const data = flightSchema.parse({ ...req.body, id: generateSecureId() });
+      flights.push(data);
       res.status(201).json(data);
     } catch (error) {
       if (error instanceof z.ZodError) {
