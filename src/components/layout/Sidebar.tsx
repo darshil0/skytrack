@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Plane, Radio, Settings, Activity, Plus, Database, RefreshCw, X, Loader2, Edit2, Trash2 } from 'lucide-react';
+import { Plane, Radio, Settings, Activity, Plus, Database, RefreshCw, X, Loader2, Edit2, Trash2, History } from 'lucide-react';
 import { motion } from 'motion/react';
 import { clsx as cn } from 'clsx';
 import { FlightSearch } from '../FlightSearch';
@@ -17,6 +17,7 @@ interface SidebarProps {
   liveRadarActive: boolean;
   setLiveRadarActive: (active: boolean) => void;
   setShowSettings: (show: boolean) => void;
+  setShowHistory: (show: boolean) => void;
   setShowModal: (show: boolean) => void;
   setEditingFlight: (flight: Flight | undefined) => void;
   flights: Flight[];
@@ -28,6 +29,7 @@ interface SidebarProps {
   selectedFlightId?: string;
   handleSelectFlight: (id: string) => void;
   handleDeleteFlight: (id: string, e: React.MouseEvent) => void;
+  historyCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -36,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   liveRadarActive,
   setLiveRadarActive,
   setShowSettings,
+  setShowHistory,
   setShowModal,
   setEditingFlight,
   flights,
@@ -46,7 +49,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   fetchLiveRadar,
   selectedFlightId,
   handleSelectFlight,
-  handleDeleteFlight
+  handleDeleteFlight,
+  historyCount = 0
 }) => {
   return (
     <aside className={cn(
@@ -80,6 +84,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="lg:hidden p-2 text-gray-500 hover:text-white bg-gray-800 rounded"
             >
               <X className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setShowHistory(true)}
+              title="Flight History Archive"
+              className="relative bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white p-2 rounded transition-all shadow-lg border border-gray-800 group"
+            >
+               <History className="w-5 h-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
+               {historyCount > 0 && (
+                 <span className="absolute -top-1 -right-1 px-1 min-w-[16px] h-4 bg-blue-600 text-white rounded-full text-[9px] font-mono font-bold flex items-center justify-center border border-[#0B0F19]">
+                   {historyCount > 99 ? '99+' : historyCount}
+                 </span>
+               )}
             </button>
             <button 
               onClick={() => setShowSettings(true)}

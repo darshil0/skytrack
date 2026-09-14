@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0] - 2026-09-14
+
+### Added
+- **Flight History & Surveillance Archive**:
+  - Built a dedicated tactical `FlightHistoryPanel` slide-over drawer accessible directly from the sidebar navigation header with live badge counts.
+  - Implemented local storage persistence engine (`skytrack_flight_history_v1`) to automatically capture both user flight searches and tracked aircraft telemetry across sessions.
+  - Added multi-criteria search filtering across historical flights by callsign, airline, destination/origin airport code, and city names.
+  - Added filter tabs (`ALL`, `TRACKED`, `SEARCHED`) and bi-directional sort ordering (newest first / oldest first).
+  - Designed interactive telemetry cards featuring origin-to-destination route badges, status indicators, relative and UTC timestamps, and one-click `Track Now` restoration to tactical map radar.
+  - Built history export functionality allowing users to download their complete surveillance history archive as formatted JSON, along with two-step safe history purging.
+
 ## [1.9.0] - 2026-09-14
 
 ### Resilience & Fault Tolerance

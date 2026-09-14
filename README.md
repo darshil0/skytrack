@@ -13,6 +13,7 @@ SkyTrack is a high-performance, real-time flight tracking application built with
 -   **AI-Powered Search & Quota Resilience**: Natural language search powered by Gemini 3.8 Flash, reinforced with an automated quota circuit breaker and aerodynamic vector contingency engine.
 -   **ATC Communication Decryption**: Anonymized, simulated ATC transcripts based on current flight sectors for enhanced situational awareness.
 -   **Flight Management**: Full CRUD operations for managing a personal database of tracked flights.
+-   **Flight History & Surveillance Archive**: Persistent local storage log recording both searched flights and tracked aircraft, featuring search filtering, sort controls, route cards, instant map tracking, and JSON data export.
 -   **Deep Linking & Sharing**: Easily share specific flight tracking data via generated URLs.
 -   **Adaptive Mobile Experience**: Fully optimized for mobile with a collapsible flight manifest and specialized touch interactions.
 

@@ -7,11 +7,13 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { Map } from './components/Map';
 import { FlightModal } from './components/FlightModal';
 import { SettingsModal } from './components/SettingsModal';
+import { FlightHistoryPanel } from './components/FlightHistoryPanel';
 import { Sidebar } from './components/layout/Sidebar';
 import { FlightDetailSidebar } from './components/layout/FlightDetailSidebar';
 import { HUD } from './components/layout/HUD';
-import { Flight, UserLocation, UserPreferences } from './types';
+import { Flight, UserLocation, UserPreferences, FlightHistoryEntry } from './types';
 import { getInitialFlights, searchFlights, getFlightTelemetry } from './services/geminiService';
+import { loadFlightHistory, recordFlightHistory, removeFlightHistoryItem, clearFlightHistory } from './services/historyStorage';
 import { Terminal, Radio, Activity, AlertTriangle } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { clsx as cn } from 'clsx';
@@ -44,6 +46,8 @@ export default function App() {
   const [isMobileListOpen, setIsMobileListOpen] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyEntries, setHistoryEntries] = useState<FlightHistoryEntry[]>(() => loadFlightHistory());
   const [editingFlight, setEditingFlight] = useState<Flight | undefined>();
   const [liveRadarActive, setLiveRadarActive] = useState(false);
   const [liveRadarFlights, setLiveRadarFlights] = useState<any[]>([]);
@@ -346,6 +350,13 @@ export default function App() {
       setFlights(data);
       setSelectedFlightId(data[0].id);
       setIsSidebarOpen(true);
+
+      // Persist searched flights into history archive
+      let updated = loadFlightHistory();
+      data.forEach(flight => {
+        updated = recordFlightHistory(flight, 'searched', query);
+      });
+      setHistoryEntries(updated);
     }
     setIsSearching(false);
   };
@@ -379,6 +390,90 @@ export default function App() {
   const handleSelectFlight = useCallback((id: string) => {
     setSelectedFlightId(id);
     setIsSidebarOpen(true);
+
+    // Record tracked flight in history archive
+    const targetFlight = flights.find(f => f.id === id);
+    if (targetFlight) {
+      const updated = recordFlightHistory(targetFlight, 'tracked');
+      setHistoryEntries(updated);
+    } else {
+      const targetLive = liveRadarFlights.find(f => f.id === id);
+      if (targetLive) {
+        const mapped: Flight = {
+          id: targetLive.id,
+          flightNumber: (targetLive.callsign && targetLive.callsign !== 'N/A') ? targetLive.callsign : `H-${targetLive.id.slice(0, 4).toUpperCase()}`,
+          airline: targetLive.origin_country || 'Unknown Sector',
+          origin: { code: '---', city: 'LIVE', lat: targetLive.lat, lng: targetLive.lng },
+          destination: { code: '---', city: 'LIVE', lat: targetLive.lat, lng: targetLive.lng },
+          departureTime: new Date().toISOString(),
+          arrivalTime: new Date().toISOString(),
+          status: targetLive.on_ground ? 'landed' : 'on-time',
+          progress: 50,
+          currentPosition: { lat: targetLive.lat, lng: targetLive.lng, altitude: targetLive.altitude, speed: targetLive.velocity, heading: targetLive.heading }
+        };
+        const updated = recordFlightHistory(mapped, 'tracked');
+        setHistoryEntries(updated);
+      }
+    }
+  }, [flights, liveRadarFlights]);
+
+  const handleSelectFlightFromHistory = useCallback((entry: FlightHistoryEntry) => {
+    const existing = flights.find(f => f.id === entry.id || f.flightNumber.toUpperCase() === entry.flightNumber.toUpperCase());
+    if (existing) {
+      setSelectedFlightId(existing.id);
+      const updated = recordFlightHistory(existing, 'tracked');
+      setHistoryEntries(updated);
+    } else if (entry.flightSnapshot) {
+      setFlights(prev => [entry.flightSnapshot!, ...prev.filter(f => f.id !== entry.flightSnapshot!.id)]);
+      setSelectedFlightId(entry.flightSnapshot.id);
+      const updated = recordFlightHistory(entry.flightSnapshot, 'tracked');
+      setHistoryEntries(updated);
+    } else {
+      const restored: Flight = {
+        id: entry.id,
+        flightNumber: entry.flightNumber,
+        airline: entry.airline,
+        origin: {
+          code: entry.origin.code,
+          city: entry.origin.city,
+          lat: entry.origin.lat ?? 0,
+          lng: entry.origin.lng ?? 0,
+        },
+        destination: {
+          code: entry.destination.code,
+          city: entry.destination.city,
+          lat: entry.destination.lat ?? 0,
+          lng: entry.destination.lng ?? 0,
+        },
+        departureTime: new Date().toISOString(),
+        arrivalTime: new Date().toISOString(),
+        status: (entry.status as any) || 'on-time',
+        progress: 50,
+        aircraftType: entry.aircraftType,
+        currentPosition: entry.currentPosition ? {
+          lat: entry.currentPosition.lat,
+          lng: entry.currentPosition.lng,
+          altitude: entry.currentPosition.altitude || 35000,
+          speed: entry.currentPosition.speed || 450,
+          heading: entry.currentPosition.heading || 90,
+        } : undefined,
+      };
+      setFlights(prev => [restored, ...prev]);
+      setSelectedFlightId(restored.id);
+      const updated = recordFlightHistory(restored, 'tracked');
+      setHistoryEntries(updated);
+    }
+    setIsSidebarOpen(true);
+  }, [flights]);
+
+  const handleRemoveHistoryItem = useCallback((id: string) => {
+    const updated = removeFlightHistoryItem(id);
+    setHistoryEntries(updated);
+  }, []);
+
+  const handleClearHistory = useCallback(() => {
+    clearFlightHistory();
+    setHistoryEntries([]);
   }, []);
 
   // FIX #8: Memoize live radar flight transformations to prevent unnecessary recalculations
@@ -405,6 +500,7 @@ export default function App() {
         liveRadarActive={liveRadarActive}
         setLiveRadarActive={setLiveRadarActive}
         setShowSettings={setShowSettings}
+        setShowHistory={setShowHistory}
         setShowModal={setShowModal}
         setEditingFlight={setEditingFlight}
         flights={flights}
@@ -416,6 +512,7 @@ export default function App() {
         selectedFlightId={selectedFlightId}
         handleSelectFlight={handleSelectFlight}
         handleDeleteFlight={handleDeleteFlight}
+        historyCount={historyEntries.length}
       />
 
       {/* Main Content */}
@@ -530,6 +627,16 @@ export default function App() {
             onClose={() => setShowSettings(false)}
             preferences={preferences}
             onSave={handleSavePreferences}
+          />
+        )}
+        {showHistory && (
+          <FlightHistoryPanel 
+            isOpen={showHistory}
+            onClose={() => setShowHistory(false)}
+            historyEntries={historyEntries}
+            onSelectFlightFromHistory={handleSelectFlightFromHistory}
+            onRemoveHistoryItem={handleRemoveHistoryItem}
+            onClearHistory={handleClearHistory}
           />
         )}
       </AnimatePresence>

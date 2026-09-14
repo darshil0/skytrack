@@ -75,3 +75,34 @@ export interface UserPreferences {
   defaultView: 'global' | 'local';
 }
 
+export interface FlightHistoryEntry {
+  id: string;
+  flightNumber: string;
+  airline: string;
+  origin: {
+    code: string;
+    city: string;
+    lat?: number;
+    lng?: number;
+  };
+  destination: {
+    code: string;
+    city: string;
+    lat?: number;
+    lng?: number;
+  };
+  status: Flight['status'] | string;
+  actionType: 'searched' | 'tracked';
+  timestamp: string; // ISO string
+  searchQuery?: string;
+  aircraftType?: string;
+  currentPosition?: {
+    lat: number;
+    lng: number;
+    altitude?: number;
+    speed?: number;
+    heading?: number;
+  };
+  flightSnapshot?: Flight;
+}
+

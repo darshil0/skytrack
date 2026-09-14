@@ -1,6 +1,6 @@
 {
   "name": "SkyTrack",
-  "description": "A high-precision real-time flight tracking dashboard with AI-powered search and global aviation maps.",
+  "description": "A high-precision real-time flight tracking dashboard with AI-powered search, global aviation maps, and local flight history surveillance archive.",
   "requestFramePermissions": [
     "geolocation"
   ],
