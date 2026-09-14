@@ -117,7 +117,6 @@ export async function serverSearchFlights(query: string): Promise<Flight[]> {
       const client = getAiClient();
       const response = await client.models.generateContent({
         model: "gemini-3.8-flash",
-        // FIX #4: Complete the truncated prompt text
         contents: `You are a real-time flight data and ATC surveillance engine. Use Google Search to find current, accurate flight information and relevant sector ATC communications for: "${query}".
         
         Current global time: ${new Date().toISOString()}
@@ -192,9 +191,10 @@ export async function serverSearchFlights(query: string): Promise<Flight[]> {
       } catch {
         // Fall through to template fallback
       }
-    } catch (err: any) {
-      const errStr = String(err?.message || err || '');
-      if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || err?.status === 429) {
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string; status?: number } | undefined;
+      const errStr = String(errorObj?.message || err || '');
+      if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errorObj?.status === 429) {
         handleQuotaExceeded();
       }
     }
@@ -256,9 +256,10 @@ export async function serverGetFlightTelemetry(flight: Flight): Promise<Flight['
       } catch {
         // Fall through to calculation
       }
-    } catch (err: any) {
-      const errStr = String(err?.message || err || '');
-      if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || err?.status === 429) {
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string; status?: number } | undefined;
+      const errStr = String(errorObj?.message || err || '');
+      if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errorObj?.status === 429) {
         handleQuotaExceeded();
       }
     }
@@ -324,7 +325,6 @@ export async function serverGetLiveWeatherOverlay(): Promise<WeatherCell[]> {
       const client = getAiClient();
       const response = await client.models.generateContent({
         model: "gemini-3.8-flash",
-        // FIX #4: Complete the truncated prompt text
         contents: `Identify the current top 10 most intense weather systems (storms or high precipitation areas) globally. Provide their exact coordinates (lat, lng), intensity (0.1 to 1.0), and estimated radius in degrees.
         
         Return an array of weather cell objects with:
@@ -361,9 +361,10 @@ export async function serverGetLiveWeatherOverlay(): Promise<WeatherCell[]> {
       } catch {
         // Fall through to fallback
       }
-    } catch (err: any) {
-      const errStr = String(err?.message || err || '');
-      if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || err?.status === 429) {
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string; status?: number } | undefined;
+      const errStr = String(errorObj?.message || err || '');
+      if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errorObj?.status === 429) {
         handleQuotaExceeded();
       }
     }

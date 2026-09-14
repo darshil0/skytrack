@@ -11,7 +11,7 @@ import { FlightHistoryPanel } from './components/FlightHistoryPanel';
 import { Sidebar } from './components/layout/Sidebar';
 import { FlightDetailSidebar } from './components/layout/FlightDetailSidebar';
 import { HUD } from './components/layout/HUD';
-import { Flight, FlightHistoryEntry, UserLocation, UserPreferences } from './types';
+import { Flight, FlightHistoryEntry, LiveRadarFlight, UserLocation, UserPreferences } from './types';
 import { getFlightTelemetry, getInitialFlights, searchFlights } from './services/geminiService';
 import {
   clearFlightHistory,
@@ -22,6 +22,7 @@ import {
 import { Activity, AlertTriangle, Radio, Terminal, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { clsx as cn } from 'clsx';
+import { calculateDistance } from './lib/utils';
 
 const DEFAULT_PREFERENCES: UserPreferences = {
   units: {
@@ -41,19 +42,6 @@ const DEFAULT_PREFERENCES: UserPreferences = {
     airspace: false,
   },
   defaultView: 'global',
-};
-
-type LiveRadarFlight = {
-  id: string;
-  callsign?: string | null;
-  origin_country?: string | null;
-  lat: number;
-  lng: number;
-  altitude?: number;
-  velocity?: number;
-  heading?: number;
-  on_ground?: boolean;
-  timestamp?: string;
 };
 
 const isBrowser = typeof window !== 'undefined';
@@ -94,26 +82,6 @@ function loadPreferences(): UserPreferences {
   }
 }
 
-function calculateDistanceNm(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const earthRadiusNm = 3440.065;
-  const degToRad = Math.PI / 180;
-
-  const deltaLat = (lat2 - lat1) * degToRad;
-  const deltaLon = (lon2 - lon1) * degToRad;
-
-  const a =
-    Math.sin(deltaLat / 2) ** 2 +
-    Math.cos(lat1 * degToRad) *
-      Math.cos(lat2 * degToRad) *
-      Math.sin(deltaLon / 2) ** 2;
-
-  return earthRadiusNm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 function toLiveFlight(radarFlight: LiveRadarFlight): Flight {
   const callsign = radarFlight.callsign?.trim();
@@ -362,7 +330,7 @@ export default function App() {
         continue;
       }
 
-      const distanceNm = calculateDistanceNm(
+      const distanceNm = calculateDistance(
         userLocation.lat,
         userLocation.lng,
         position.lat,
