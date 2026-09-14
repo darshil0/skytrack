@@ -43,13 +43,15 @@ const flightSchema = z.object({
   }).optional(),
 });
 
+type Flight = z.infer<typeof flightSchema>;
+
 // FIX #6: Utility function for secure ID generation
 function generateSecureId(): string {
   return randomBytes(6).toString('hex');
 }
 
 // Mock Database
-let flights = [
+let flights: Flight[] = [
   {
     id: "1",
     flightNumber: "BA123",
@@ -58,7 +60,7 @@ let flights = [
     destination: { code: "JFK", city: "New York", lat: 40.6413, lng: -73.7781 },
     departureTime: new Date(Date.now() - 3600000).toISOString(),
     arrivalTime: new Date(Date.now() + 21600000).toISOString(),
-    status: "on-time" as const,
+    status: "on-time",
     progress: 15,
     currentPosition: { lat: 52.0, lng: -10.0, altitude: 35000, speed: 450, heading: 270 }
   }
@@ -95,8 +97,7 @@ async function startServer() {
       }
       const results = await serverSearchFlights(query);
       res.json(results);
-    } catch (error) {
-      console.error("Server search flights failed:", error);
+    } catch {
       res.status(500).json({ error: "Search failed" });
     }
   });
@@ -110,8 +111,7 @@ async function startServer() {
       }
       const telemetry = await serverGetFlightTelemetry(flight);
       res.json(telemetry || {});
-    } catch (error) {
-      console.error("Server flight telemetry failed:", error);
+    } catch {
       res.status(500).json({ error: "Telemetry failed" });
     }
   });
@@ -121,8 +121,7 @@ async function startServer() {
     try {
       const weatherOverlay = await serverGetLiveWeatherOverlay();
       res.json(weatherOverlay);
-    } catch (error) {
-      console.error("Server weather overlay failed:", error);
+    } catch {
       res.status(500).json({ error: "Weather overlay failed" });
     }
   });
@@ -193,8 +192,7 @@ async function startServer() {
       }));
 
       res.json(states);
-    } catch (error) {
-      console.error("OpenSky fetch failed:", error);
+    } catch {
       res.status(500).json({ error: "Failed to fetch live flight data" });
     }
   });

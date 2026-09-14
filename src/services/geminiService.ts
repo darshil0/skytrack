@@ -14,7 +14,7 @@ export async function searchFlights(query: string): Promise<Flight[]> {
     }
     return await res.json();
   } catch (err) {
-    console.error("AI Search API request failed:", err);
+    console.warn("AI Search API request warning:", err);
     return [];
   }
 }
@@ -37,7 +37,7 @@ export async function getFlightTelemetry(flight: Flight): Promise<Flight['teleme
     }
     return await res.json();
   } catch (err) {
-    console.error("AI Telemetry API request failed:", err);
+    console.warn("AI Telemetry API request warning:", err);
     return undefined;
   }
 }

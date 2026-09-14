@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Map } from './components/Map';
 import { FlightModal } from './components/FlightModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -62,7 +62,7 @@ export default function App() {
           mapLayers: { ...DEFAULT_PREFERENCES.mapLayers, ...(parsed.mapLayers || {}) },
         };
       } catch (e) {
-        console.error("Failed to parse preferences", e);
+        console.warn("Failed to parse preferences", e);
         return DEFAULT_PREFERENCES;
       }
     }
@@ -172,7 +172,7 @@ export default function App() {
         if (data.length > 0 && !selectedFlightId && !liveRadarActive) setSelectedFlightId(data[0].id);
       }
     } catch (err) {
-      console.error("Failed to fetch from API", err);
+      console.warn("Failed to fetch from API", err);
     }
   };
 
@@ -184,7 +184,7 @@ export default function App() {
         setLiveRadarFlights(data);
       }
     } catch (err) {
-      console.error("Live Radar fetch failed", err);
+      console.warn("Live Radar fetch failed", err);
     }
   };
 
@@ -211,10 +211,11 @@ export default function App() {
         },
         (error) => {
           const msg = error.code === 1 ? 'PERM_DENIED' : `ERR_CODE_${error.code}`;
-          if (error.code !== 1) console.error(`Geolocation error (${error.code}): ${error.message}`);
+          // Treat geolocation errors (timeout, unavailable, permission denied) as warnings rather than fatal errors
+          console.warn(`Geolocation unavailable (${error.code}): ${error.message}`);
           setLocationError(msg);
         },
-        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
       );
     } else {
       setLocationError("Geolocation not supported by browser");
@@ -259,7 +260,7 @@ export default function App() {
           }
         }
       } catch (err) {
-        console.error("Initialization failed", err);
+        console.warn("Initialization note:", err);
         if (isMounted) setIsSearching(false);
       }
     };
@@ -282,17 +283,23 @@ export default function App() {
     }
   }, []);
 
+  const attemptedTelemetryIdsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     // Handle telemetry fetching for selected flight
     const flight = flights.find(f => f.id === selectedFlightId);
-    if (flight && !flight.telemetry && !isTelemetryLoading) {
+    if (flight && !flight.telemetry && !isTelemetryLoading && !attemptedTelemetryIdsRef.current.has(flight.id)) {
+      attemptedTelemetryIdsRef.current.add(flight.id);
       const fetchTelemetry = async () => {
         setIsTelemetryLoading(true);
-        const telemetry = await getFlightTelemetry(flight);
-        if (telemetry) {
-          setFlights(prev => prev.map(f => f.id === flight.id ? { ...f, telemetry } : f));
+        try {
+          const telemetry = await getFlightTelemetry(flight);
+          if (telemetry) {
+            setFlights(prev => prev.map(f => f.id === flight.id ? { ...f, telemetry } : f));
+          }
+        } finally {
+          setIsTelemetryLoading(false);
         }
-        setIsTelemetryLoading(false);
       };
       fetchTelemetry();
     }
@@ -318,7 +325,7 @@ export default function App() {
         });
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
-          console.error('Error sharing:', err);
+          console.warn('Error sharing:', err);
         }
       }
     } else {
@@ -327,7 +334,7 @@ export default function App() {
         await navigator.clipboard.writeText(shareUrl);
         alert('Tracking link copied to clipboard!');
       } catch (err) {
-        console.error('Failed to copy:', err);
+        console.warn('Failed to copy:', err);
       }
     }
   };

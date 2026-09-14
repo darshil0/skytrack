@@ -15,7 +15,7 @@ export async function getLiveWeatherOverlay(): Promise<WeatherCell[]> {
     }
     return await res.json();
   } catch (err) {
-    console.error("Weather Overlay API request failed:", err);
+    console.warn("Weather Overlay API request warning:", err);
     return [];
   }
 }
