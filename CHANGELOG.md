@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.1] - 2026-09-14
+
+### Added
+- **Test Infrastructure & Verification**:
+  - Added Vitest test suite for server-side AI service (`server/__tests__/aiService.test.ts`), validating quota circuit breaker activation and fallback calculations.
+  - Added unit tests for flight history storage engine (`src/services/__tests__/historyStorage.test.ts`), covering localStorage persistence, multi-criteria filtering, and export functions.
+  - Added test suite for geospatial utility functions (`src/lib/__tests__/utils.test.ts`), ensuring accurate Haversine distance calculations for flight trajectories.
+
+### Fixed
+- **Map & Tactical HUD Property Access**: Resolved potential undefined property access and coordinate validation issues in `src/components/Map.tsx`.
+- **Type Safety & Code Quality**: Improved TypeScript strictness and fixed linting issues across client and server components (`tsc --noEmit`).
+
 ## [1.10.0] - 2026-09-14
 
 ### Added
