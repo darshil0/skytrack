@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2026-09-14
+
+### Resilience & Fault Tolerance
+- **Quota Circuit Breaker**: Introduced an automatic quota circuit breaker (`isQuotaExhausted()`) in `server/aiService.ts` to absorb upstream Google Gen AI rate limits (HTTP 429) without crashing or flooding upstream endpoints.
+- **Aerodynamic Vector Fallbacks**: Implemented mathematical flight vector contingency calculations (fuel burn estimated from Great-Circle distance and cruising speed, ETD calculated from route progress, standard IFR sector advisories) when AI models are in cooldown or offline.
+- **Model Upgrade**: Upgraded to `gemini-3.8-flash` across server-side AI endpoints.
+- **Search Grounding Hygiene**: Streamlined `serverGetFlightTelemetry` prompt configuration to bypass unnecessary Google Search grounding, preserving rate-limit quotas for flight discovery and meteorological sweeps.
+- **Structured Contingency Templates**: Added international flight route templates and meteorological radar cells to provide uninterrupted tactical map visuals during network partitions or quota limits.
+
+### Frontend Performance & Lifecycle
+- **Telemetry Fetch Deduplication**: Added `attemptedTelemetryIdsRef` in `src/App.tsx` to ensure flight telemetry is requested at most once per selected flight, preventing rapid re-fetch loops and quota depletion.
+- **Resilient Geolocation Handling**:
+  - Increased geolocation timeout from 5s to 15s and allowed up to 5 minutes of cached coordinates (`maximumAge: 300000`).
+  - Gracefully mapped geolocation errors (timeouts, unavailable devices) to a non-blocking tactical HUD indicator (`LOC_UNAVAILABLE`) with an interactive `RETRY_LOCK` button rather than throwing fatal console errors.
+
+### Type Safety & Log Hygiene
+- **Zod Schema Inference**: Typed the server flight store explicitly with `Flight[]` inferred from `flightSchema` (`z.infer<typeof flightSchema>`), preventing type errors during flight status updates (`scheduled`, `delayed`, `on-time`, `landed`, `diverted`).
+- **Clean Log Streams**: Eliminated noisy stderr logs for handled network contingencies and rate limits across server endpoints and client services.
+
 ## [1.8.0] - 2026-09-13
 
 ### Security Fixes

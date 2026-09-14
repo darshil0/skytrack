@@ -7,10 +7,10 @@ SkyTrack is a high-performance, real-time flight tracking application built with
 -   **Tactical Map Interface**: A high-contrast, black-ops style map built with D3.js, supporting natural earth projections, smooth zooming, **animated flight trajectories**, and interactive map layers.
 -   **AI Weather Radar Layer**: Live global weather system tracking powered by Gemini with Search Grounding, identifying storms and precipitation centers in real-time.
 -   **Tactical Airspace Sectors**: Visualization of major Flight Information Regions (FIRs) and tactical airspace boundaries.
--   **Advanced Telemetry History**: High-fidelity data visualization for flight paths, featuring scaled Lat/Lng progression charts, interactive tooltips, predictive fuel burn calculations, and estimated time to destination.
+-   **Advanced Telemetry History**: High-fidelity data visualization for flight paths, featuring scaled Lat/Lng progression charts, interactive tooltips, predictive fuel burn calculations, and estimated time to destination with algorithmic fallbacks.
 -   **Intelligent Proximity Alerts**: Real-time detection of aircraft within a user-defined radius (up to 250NM), featuring pulsing visual highlights, callsign identification in the HUD, and optional audible alerts.
 -   **Live Radar Ingestion**: Real-time flight data fetching from OpenSky Network and Google Search Grounding to provide current aircraft positions.
--   **AI-Powered Search**: Natural language search capabilities powered by Gemini 1.5/3.5 Flash to find specific flights or simulate data.
+-   **AI-Powered Search & Quota Resilience**: Natural language search powered by Gemini 3.8 Flash, reinforced with an automated quota circuit breaker and aerodynamic vector contingency engine.
 -   **ATC Communication Decryption**: Anonymized, simulated ATC transcripts based on current flight sectors for enhanced situational awareness.
 -   **Flight Management**: Full CRUD operations for managing a personal database of tracked flights.
 -   **Deep Linking & Sharing**: Easily share specific flight tracking data via generated URLs.
@@ -22,7 +22,7 @@ SkyTrack is a high-performance, real-time flight tracking application built with
 -   **Animations**: Motion (`motion/react`)
 -   **Backend**: Node.js, Express, Zod (Validation), Esbuild (Server bundle)
 -   **Data Visualization**: D3.js, Recharts (equipped with sync reference trackers)
--   **AI Engine**: Google Generative AI (Gemini 1.5/3.5 Flash via Server-Side Proxies) with Search Grounding
+-   **AI Engine**: Google Generative AI (Gemini 3.8 Flash via Server-Side Proxies) with Search Grounding and Rate-Limit Circuit Breaker
 -   **Icons**: Lucide React
 -   **Styling**: Tactical UI System with custom scanline effects and grid overlays
 -   **Security**: Cryptographically secure ID generation, CORS validation, environment-based configuration
@@ -40,9 +40,13 @@ To prevent API key exposure and secure client sessions, all interactive AI featu
 -   `POST /api/gemini/telemetry`: Computes safety bulletins, fuel burn predictions, and ETD estimates server-side.
 -   `GET /api/weather/overlay`: Performs real-time meteorological sweeps using search models to locate major weather anomalies globally.
 
-### Security Considerations
+### Security & Resilience Considerations
 
 - **API Key Protection**: Environment variables are read only on the server; the client never receives credentials.
+- **Quota Circuit Breaker**: Upstream Gemini rate limits (HTTP 429) trigger a transient cooldown window to prevent cascading request failures or thread exhaustion.
+- **Aerodynamic Vector Fallbacks**: When AI services are in cooldown or offline, tactical telemetry (fuel burn, ETD, weather safety bulletins) is computed algorithmically via Great-Circle distance, aircraft speed, and route progress.
+- **Deduplicated Telemetry Dispatch**: Selected flight telemetry requests are cached and deduplicated in the UI lifecycle to prevent infinite re-query loops.
+- **Resilient Geolocation Lock**: Geolocation coordinates use high-tolerance timeouts (15s) and 5-minute cache lifespan, falling back to a non-blocking HUD indicator with manual retry.
 - **CORS Configuration**: Configurable origin allowlist with proper validation to prevent unauthorized cross-origin requests.
 - **Secure ID Generation**: Flight IDs use cryptographic random bytes instead of `Math.random()`.
 - **Input Validation**: All API requests validated with Zod schemas on the server before processing.
