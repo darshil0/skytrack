@@ -55,7 +55,7 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [worldData, setWorldData] = useState<any>(null);
+  const [worldData, setWorldData] = useState<GeoJSON.FeatureCollection | null>(null);
   const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
   const [weatherData, setWeatherData] = useState<WeatherCell[]>([]);
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
@@ -101,8 +101,14 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
 
   // Load static map data once
   useEffect(() => {
-    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((data: any) => {
-      setWorldData(topojson.feature(data, data.objects.countries));
+    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((data) => {
+      if (!data) return;
+      const parsedData = data as unknown as Parameters<typeof topojson.feature>[0];
+      const featureData = topojson.feature(
+        parsedData,
+        parsedData.objects.countries as unknown as Parameters<typeof topojson.feature>[1]
+      ) as unknown as GeoJSON.FeatureCollection;
+      setWorldData(featureData);
     });
   }, []);
 
@@ -121,7 +127,7 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
     const svg = d3.select(svgRef.current);
     
     // Apply zoom behavior with improved gesture handling
-    svg.call(zoomBehavior as any)
+    svg.call(zoomBehavior as unknown as (selection: d3.Selection<SVGSVGElement, unknown, null, undefined>) => void)
        .on('dblclick.zoom', null); // Disable double click zoom to allow for custom double-tap logic if needed
        
     // Ensure we prevent default browser gestures that might conflict
@@ -148,7 +154,7 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
       .duration(1000) // Slightly longer for smoother deceleration
       .ease(d3.easeCubicInOut);
 
-    zoomBehavior.transform(transition as any, d3.zoomIdentity
+    zoomBehavior.transform(transition as unknown as d3.Transition<SVGSVGElement, unknown, null, undefined>, d3.zoomIdentity
       .translate(dimensions.width / 2, dimensions.height / 2)
       .scale(k)
       .translate(-x, -y));
@@ -223,7 +229,7 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
           {/* Static Map Layer */}
           {worldData && (
             <g className="map-base">
-              {worldData.features.map((feature: any, i: number) => (
+              {worldData.features.map((feature, i: number) => (
                 <path
                   key={`country-${i}`}
                   d={pathGenerator(feature) || ''}
@@ -233,7 +239,7 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
                 />
               ))}
               <path
-                d={pathGenerator(d3.geoGraticule().step([10, 10])() as any) || ''}
+                d={pathGenerator(d3.geoGraticule().step([10, 10])()) || ''}
                 fill="none"
                 stroke="#3B82F6"
                 strokeWidth={0.2 / transform.k}
@@ -508,11 +514,11 @@ export const Map: React.FC<MapProps> = ({ flights, selectedFlightId, onSelectFli
                      <div className="space-y-3">
                         <div>
                           <span className="text-[8px] font-mono text-gray-500 uppercase block tracking-widest">Velocity</span>
-                          <span className="text-sm font-bold text-white tabular-nums">{selectedFlight?.speed ?? 0} <span className="text-[9px] font-normal text-gray-400">KT</span></span>
+                          <span className="text-sm font-bold text-white tabular-nums">{selectedFlight?.currentPosition?.speed ?? 0} <span className="text-[9px] font-normal text-gray-400">KT</span></span>
                         </div>
                         <div>
                           <span className="text-[8px] font-mono text-gray-500 uppercase block tracking-widest">Altitude</span>
-                          <span className="text-sm font-bold text-white tabular-nums">{(selectedFlight?.altitude ?? 0).toLocaleString()} <span className="text-[9px] font-normal text-gray-400">FT</span></span>
+                          <span className="text-sm font-bold text-white tabular-nums">{(selectedFlight?.currentPosition?.altitude ?? 0).toLocaleString()} <span className="text-[9px] font-normal text-gray-400">FT</span></span>
                         </div>
                      </div>
                      <div className="space-y-3">

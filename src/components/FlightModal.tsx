@@ -20,7 +20,7 @@ const flightInputSchema = z.object({
 interface FlightModalProps {
   flight?: Flight;
   onClose: () => void;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: Partial<Flight>) => Promise<void>;
 }
 
 export const FlightModal: React.FC<FlightModalProps> = ({ flight, onClose, onSave }) => {
@@ -206,7 +206,7 @@ export const FlightModal: React.FC<FlightModalProps> = ({ flight, onClose, onSav
               <label className="text-[10px] font-mono text-gray-500 uppercase">Status</label>
               <select 
                 value={formData.status}
-                onChange={e => setFormData({...formData, status: e.target.value as any})}
+                onChange={e => setFormData({...formData, status: e.target.value as Flight['status']})}
                 className="w-full bg-black/50 border border-gray-800 rounded px-3 py-2 text-sm text-white appearance-none"
               >
                 <option value="scheduled">SCHEDULED</option>

@@ -50,6 +50,19 @@ export interface FlightInput {
   progress: number;
 }
 
+export interface LiveRadarFlight {
+  id: string;
+  callsign?: string | null;
+  origin_country?: string | null;
+  lat: number;
+  lng: number;
+  altitude?: number;
+  velocity?: number;
+  heading?: number;
+  on_ground?: boolean;
+  timestamp?: string;
+}
+
 export interface UserLocation {
   lat: number;
   lng: number;
@@ -91,7 +104,7 @@ export interface FlightHistoryEntry {
     lat?: number;
     lng?: number;
   };
-  status: Flight['status'] | string;
+  status: Flight['status'];
   actionType: 'searched' | 'tracked';
   timestamp: string; // ISO string
   searchQuery?: string;

@@ -178,17 +178,33 @@ async function startServer() {
 
       const data = await response.json();
       
+      type OpenSkyStateVector = [
+        string, // 0: icao24
+        string | null, // 1: callsign
+        string, // 2: origin_country
+        number | null, // 3: time_position
+        number | null, // 4: last_contact
+        number | null, // 5: longitude
+        number | null, // 6: latitude
+        number | null, // 7: baro_altitude
+        boolean, // 8: on_ground
+        number | null, // 9: velocity
+        number | null, // 10: true_track
+        ...unknown[]
+      ];
+
       // Limit to top 50 flights for performance
-      const states = (data.states || []).slice(0, 50).map((s: any) => ({
+      const rawStates: OpenSkyStateVector[] = Array.isArray(data.states) ? data.states : [];
+      const states = rawStates.slice(0, 50).map((s) => ({
         id: s[0],
-        callsign: s[1]?.trim() || "N/A",
+        callsign: typeof s[1] === 'string' ? s[1].trim() || "N/A" : "N/A",
         origin_country: s[2],
-        lat: s[6],
-        lng: s[5],
-        altitude: s[7],
-        velocity: s[9],
-        heading: s[10],
-        on_ground: s[8]
+        lat: typeof s[6] === 'number' ? s[6] : 0,
+        lng: typeof s[5] === 'number' ? s[5] : 0,
+        altitude: typeof s[7] === 'number' ? s[7] : undefined,
+        velocity: typeof s[9] === 'number' ? s[9] : undefined,
+        heading: typeof s[10] === 'number' ? s[10] : undefined,
+        on_ground: Boolean(s[8])
       }));
 
       res.json(states);

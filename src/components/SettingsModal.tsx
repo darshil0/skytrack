@@ -95,10 +95,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, p
             <div className="space-y-1">
                 <label className="text-[9px] text-gray-500 uppercase font-mono">Default View Overlay</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {['dark', 'satellite', 'navigation'].map((style) => (
+                  {(['dark', 'satellite', 'navigation'] as const).map((style) => (
                     <button 
                       key={style}
-                      onClick={() => setLocalPrefs(p => ({ ...p, mapStyle: style as any }))}
+                      onClick={() => setLocalPrefs(p => ({ ...p, mapStyle: style }))}
                       className={`text-[9px] py-2 rounded font-mono uppercase border border-gray-800 ${localPrefs.mapStyle === style ? 'bg-blue-900/40 text-blue-400 border-blue-500' : 'bg-gray-900 text-gray-600'}`}
                     >
                       {style}
